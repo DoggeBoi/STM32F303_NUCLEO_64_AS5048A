@@ -17,7 +17,7 @@ Prescaler:      8, Baud 4.5MBits/s
 
 CPOL:           Low
 
-CPHA:           2 Edge
+CPHA:           1 Edge
 
 CRC:            Disabled
 
