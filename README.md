@@ -17,7 +17,7 @@ Prescaler:      8, Baud 4.5MBits/s
 
 CPOL:           Low
 
-CPHA:           1 Edge
+CPHA:           2 Edge
 
 CRC:            Disabled
 
@@ -27,3 +27,4 @@ USER CODE BEGIN SPI2_Init 2
 
 hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;	//Enables pulse mode
 
+AS5048 needs CPHA = 1, doesnt work with pulse mode :(
