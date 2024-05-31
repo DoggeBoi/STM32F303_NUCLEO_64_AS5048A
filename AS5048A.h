@@ -22,8 +22,10 @@
 /*	SPI error defines   */
 typedef enum {
     SPI_SUCCESS,           		// No error
-    SPI_ERROR_INIT,             // Initialization error
 	SPI_ERROR,					// General error
+	SPI_INIT_FAIL,				// Initialisation fail
+	SPI_CONNECTION_FAIL,		// Failed to reestablish connection
+	SPI_PARITY_ERROR			// Parity bit is incorrect
 } AS5048A_Error;
 
 
@@ -40,14 +42,11 @@ typedef struct {
 	/*   Angle measured   */
 	float angleDegrees;
 
-	/*   Zero Position   */
-	uint16_t zeroPos;
-
 } AS5048A;
 
 
 /*   Initialisation   */
-AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t, uint16_t zeroPos);
+AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t);
 
 
 /*   SPI transmit / receive and chip select control function   */
@@ -60,20 +59,25 @@ AS5048A_Error AS5048A_ReadRegister(AS5048A *encoder, uint16_t regAddr, uint16_t 
 AS5048A_Error AS5048A_WriteRegister(AS5048A *encoder, uint16_t regAddr, uint16_t data);
 AS5048A_Error AS5048A_ClearErrorFlags(AS5048A *encoder);
 
+
 /*	Angle read function   */
-AS5048A_Error AS5048A_GetAngleRad(AS5048A *encoder, float *angle);
+AS5048A_Error AS5048A_ReadAngle(AS5048A *encoder, uint16_t *angle);
 
 
 /*   Set home position   */
 AS5048A_Error AS5048A_SetZeroPosition(AS5048A *encoder, uint16_t zeroPos);
 
 
-/*   Error report and handle   */
-void AS5048A_ErrorHandeler(uint8_t errorCode);
+/*   In case of error check connection   */
+AS5048A_Error AS5048A_ConnectionCheck(AS5048A *encoder);
 
 
 /*   SPI parity calculator   */
 uint8_t CalcParityEven(uint16_t data);
+
+
+/*   Check parity calculator   */
+AS5048A_Error CheckParityEven(uint16_t data);
 
 
 #endif /* STM32F303RE_AS5048A_DRIVER_INC_AS5048A_H */

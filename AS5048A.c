@@ -4,8 +4,10 @@
 /*   SPI parity calculator   */
 uint8_t CalcParityEven(uint16_t data) {
 
+	/*   Initialise return variable   */
 	uint8_t parity = 0;
 
+	/*   Calculate parity   */
 	while (data){
 		parity ^= ( data & 1 );
 		data >>= 1;
@@ -15,16 +17,34 @@ uint8_t CalcParityEven(uint16_t data) {
 
 }
 
+AS5048A_Error CheckParityEven(uint16_t data){
+
+	/*   Initialise count variable   */
+	uint8_t count = 0;
+
+	/*   Count number of ones   */
+	while ( data ) {
+		count += data & 1;
+		data >>= 1;
+	}
+
+	/*   Check if count is even   */
+	if (count & 1 == 1) {				// If count is uneven
+		return SPI_PARITY_ERROR;
+	}
+
+	return SPI_SUCCESS;
+
+}
+
 
 /*   Initialisation   */
-AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint16_t zeroPos) {
+AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin) {
 
 	/*   Store parameters in struct   */
 	encoder->spiHandle 	= 	spiHandle;
 	encoder->csPort		=	csPort;
 	encoder->csPin		=	csPin;
-
-	encoder->zeroPos	=	zeroPos;
 
 	/*   Initialise status variable   */
 	uint8_t	status = 0;
@@ -35,6 +55,9 @@ AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_
 	/*	Encoder startup   */
 	HAL_Delay(10);
 
+	/*   SPI connection check   */
+	status += AS5048A_ConnectionCheck(encoder);
+
 	/*   Clear error flag register   */
 	status += AS5048A_ClearErrorFlags(encoder);
 
@@ -43,12 +66,9 @@ AS5048A_Error AS5048A_Init(AS5048A *encoder, SPI_HandleTypeDef *spiHandle, GPIO_
 	status += AS5048A_ReadRegister(encoder, AS5048A_AGCR, &OCF);
 	status += ( ( OCF & ( 1 << 8 ) ) == 0 );
 
-	/*   Set zero position   */
-	status += AS5048A_SetZeroPosition(encoder, zeroPos);
-
 	/*   SPI communications check   */
 	if ( status != 0 ) {
-				return SPI_ERROR_INIT;
+				return SPI_INIT_FAIL;
 			}
 
 	return SPI_SUCCESS;
@@ -126,6 +146,7 @@ AS5048A_Error AS5048A_WriteRegister(AS5048A *encoder, uint16_t regAddr, uint16_t
 		}
 
 	return SPI_SUCCESS;
+
 }
 
 
@@ -173,26 +194,25 @@ AS5048A_Error AS5048A_SetZeroPosition(AS5048A *encoder, uint16_t zeroPos) {
 }
 
 
-AS5048A_Error AS5048A_GetAngleRad(AS5048A *encoder, float *angle){
+AS5048A_Error AS5048A_ReadAngle(AS5048A *encoder, uint16_t *angle){
 
-	/*   Initialise raw angle variable   */
-	uint16_t angleRaw;
+	/*   Initialise SPI buffers   */
+	uint16_t RxBuf[] = {AS5048A_NOP};
 
 	/*   Initialise status variable   */
 	uint8_t	status = 0;
 
 	/*   Read angle register   */
-	status += AS5048A_ReadRegister(encoder, AS5048A_ANGR, &angleRaw);
-
-	/*   Convert angleRaw to angle (radians)   */
-	*angle = angleRaw * 0.00038349519;
+	status += AS5048A_ReadRegister(encoder, AS5048A_ANGR, RxBuf);
 
 	/*   SPI communications check   */
 	if ( status != 0 ) {
 			return SPI_ERROR;
 		}
 
+	*angle = RxBuf[0] & 0x3FFF;
 	return SPI_SUCCESS;
+
 }
 
 
@@ -212,6 +232,7 @@ AS5048A_Error AS5048A_Transmit(AS5048A *encoder, uint16_t *TxBuf){
 		}
 
 	return SPI_SUCCESS;
+
 }
 
 
@@ -232,5 +253,32 @@ AS5048A_Error AS5048A_Receive(AS5048A *encoder, uint16_t *RxBuf){
 
 	return SPI_SUCCESS;
 
+}
+
+
+AS5048A_Error AS5048A_ConnectionCheck(AS5048A *encoder){
+
+	/*   Initialise status variable   */
+	uint8_t	status;
+
+	/*   Initialise counter variable   */
+	uint8_t	counter;
+
+	/*   Test connection up to 3 times   */
+	for ( counter = 0; counter <= 3; counter++ ) {
+
+		status = 0;
+
+		AS5048A_ClearErrorFlags(encoder);
+
+	}
+
+//test3 times
+// log
+// check Diagnostics register
+// OCF bit must be 1
+// Parity must be correct !
+// NO error flag
+// Clear error flag every try
 }
 
